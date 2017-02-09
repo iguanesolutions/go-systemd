@@ -1,6 +1,7 @@
 package systemd
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -37,7 +38,7 @@ func (c *Controller) SendHeartbeat() error {
 		return fmt.Errorf("can't send hearbeat: %v", c.err)
 	}
 	if !c.sent {
-		return fmt.Errorf("can't send hearbeat: notifications are not supported (NOTIFY_SOCKET is unset)")
+		return errors.New("can't send hearbeat: notifications are not supported (NOTIFY_SOCKET is unset)")
 	}
 	return nil
 }
