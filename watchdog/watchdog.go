@@ -10,6 +10,8 @@ import (
 // Controller is an interface to the systemd watchdog mechanism
 type Controller struct {
 	watchdogLimit time.Duration
+	sent          bool
+	err           error
 }
 
 // New returns :
@@ -19,7 +21,7 @@ type Controller struct {
 func New() (*Controller, error) {
 	interval, err := daemon.SdWatchdogEnabled(false)
 	if err != nil {
-		return nil, fmt.Errorf("initialization error: %v", err)
+		return nil, fmt.Errorf("initialization went wrong: %v", err)
 	}
 	if interval == 0 {
 		return nil, nil
@@ -31,11 +33,11 @@ func New() (*Controller, error) {
 
 // SendHeartbeat sends a notification to systemd watchdog
 func (c *Controller) SendHeartbeat() error {
-	sent, err := daemon.SdNotify(false, "WATCHDOG=1")
-	if err != nil {
-		return fmt.Errorf("can't send hearbeat: %v", err)
+	c.sent, c.err = daemon.SdNotify(false, "WATCHDOG=1")
+	if c.err != nil {
+		return fmt.Errorf("can't send hearbeat: %v", c.err)
 	}
-	if !sent {
+	if !c.sent {
 		return fmt.Errorf("can't send hearbeat: notifications not supported (NOTIFY_SOCKET is unset)")
 	}
 	return nil
