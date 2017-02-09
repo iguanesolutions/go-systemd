@@ -42,8 +42,8 @@ func (c *Controller) SendHeartbeat() error {
 	return nil
 }
 
-// SpawnTicker initialize and returns a ticker set at 1/3 of the watchdog duration.
+// NewTicker initializes and returns a ticker set at 1/3 of the watchdog duration.
 // It can be used by clients to trigger checks before using SendHeartbeat().
-func (c *Controller) SpawnTicker() *time.Ticker {
+func (c *Controller) NewTicker() *time.Ticker {
 	return time.NewTicker(c.watchdogLimit / 3)
 }
