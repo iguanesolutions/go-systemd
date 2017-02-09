@@ -19,26 +19,25 @@ type Controller struct {
 // nil, nil         : watchdog is not enabled
 // nil, error       : an error occured during initialization
 func New() (*Controller, error) {
-	interval, err := daemon.SdWatchdogEnabled(false)
-	if err != nil {
-		return nil, fmt.Errorf("initialization went wrong: %v", err)
+	c := Controller{}
+	c.watchdogLimit, c.err = daemon.SdWatchdogEnabled(false)
+	if c.err != nil {
+		return nil, fmt.Errorf("initialization went wrong: %v", c.err)
 	}
-	if interval == 0 {
+	if c.watchdogLimit == 0 {
 		return nil, nil
 	}
-	return &Controller{
-		watchdogLimit: interval,
-	}, nil
+	return &c, nil
 }
 
-// SendHeartbeat sends a notification to systemd watchdog
+// SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *Controller) SendHeartbeat() error {
 	c.sent, c.err = daemon.SdNotify(false, "WATCHDOG=1")
 	if c.err != nil {
 		return fmt.Errorf("can't send hearbeat: %v", c.err)
 	}
 	if !c.sent {
-		return fmt.Errorf("can't send hearbeat: notifications not supported (NOTIFY_SOCKET is unset)")
+		return fmt.Errorf("can't send hearbeat: notifications are not supported (NOTIFY_SOCKET is unset)")
 	}
 	return nil
 }
