@@ -10,9 +10,10 @@ import (
 
 // WatchDog is an interface to the systemd watchdog mechanism
 type WatchDog struct {
-	watchdogLimit time.Duration
-	sent          bool
-	err           error
+	watchdogLimit  time.Duration
+	watchdogChecks time.Duration
+	sent           bool
+	err            error
 }
 
 // NewWatchdog returns :
@@ -28,6 +29,7 @@ func NewWatchdog() (*WatchDog, error) {
 	if c.watchdogLimit == 0 {
 		return nil, nil
 	}
+	c.watchdogChecks = c.watchdogLimit / 3
 	return &c, nil
 }
 
@@ -43,8 +45,19 @@ func (c *WatchDog) SendHeartbeat() error {
 	return nil
 }
 
-// NewTicker initializes and returns a ticker set at 1/3 of the watchdog duration.
+// GetChecksDuration returns the ideal time for a client to perform (active or passive collect) checks.
+// Is is equal at 1/3 of watchdogLimit
+func (c *WatchDog) GetChecksDuration() time.Duration {
+	return c.watchdogChecks
+}
+
+// GetLimitDuration returns the systemd watchdog limit provided by systemd
+func (c *WatchDog) GetLimitDuration() time.Duration {
+	return c.watchdogLimit
+}
+
+// NewTicker initializes and returns a ticker set at watchdogChecks (which is set at 1/3 of watchdogLimit).
 // It can be used by clients to trigger checks before using SendHeartbeat().
 func (c *WatchDog) NewTicker() *time.Ticker {
-	return time.NewTicker(c.watchdogLimit / 3)
+	return time.NewTicker(c.watchdogChecks)
 }
