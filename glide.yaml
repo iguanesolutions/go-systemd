@@ -1,0 +1,6 @@
+package: gitlab.iguanesolutions.com/golibs/systemd
+import:
+- package: github.com/coreos/go-systemd
+  version: ^15.0.0
+  subpackages:
+  - daemon
