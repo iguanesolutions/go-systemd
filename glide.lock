@@ -1,8 +1,0 @@
-hash: 948dbfa2bda17415ebee70e15fb1b5329ab6871beb0999b2cda671919adeef34
-updated: 2017-10-10T17:35:28.659178562+02:00
-imports:
-- name: github.com/coreos/go-systemd
-  version: d2196463941895ee908e13531a23a39feb9e1243
-  subpackages:
-  - daemon
-testImports: []
