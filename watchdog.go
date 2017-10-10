@@ -1,7 +1,6 @@
 package systemd
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -35,14 +34,7 @@ func NewWatchdog() (*WatchDog, error) {
 
 // SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *WatchDog) SendHeartbeat() error {
-	c.sent, c.err = daemon.SdNotify(false, "WATCHDOG=1")
-	if c.err != nil {
-		return fmt.Errorf("can't send hearbeat: %v", c.err)
-	}
-	if !c.sent {
-		return errors.New("can't send hearbeat: notifications are not supported (NOTIFY_SOCKET is unset)")
-	}
-	return nil
+	return NotifyWatchDog()
 }
 
 // GetChecksDuration returns the ideal time for a client to perform (active or passive collect) checks.
