@@ -25,7 +25,7 @@ func NewWatchdog() (wd *WatchDog, err error) {
 	// Spawn the systemd notifier
 	notifier, err := NewNotifier()
 	if err != nil {
-		err = fmt.Errorf("can't initialize the systemd notifier: %v", err)
+		err = fmt.Errorf("can't initialize the systemd notify controller: %v", err)
 		return
 	}
 	// Return the initialized controller
@@ -47,11 +47,11 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 	}
 	wusecTyped, err := strconv.Atoi(wusec)
 	if err != nil {
-		err = fmt.Errorf("error converting WATCHDOG_USEC: %s", err)
+		err = fmt.Errorf("can't convert WATCHDOG_USEC as int: %s", err)
 		return
 	}
 	if wusecTyped <= 0 {
-		err = fmt.Errorf("error WATCHDOG_USEC must be a positive number")
+		err = fmt.Errorf("WATCHDOG_USEC must be a positive number")
 		return
 	}
 	interval = time.Duration(wusecTyped) * time.Microsecond
@@ -62,7 +62,7 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 	}
 	wpidTyped, err := strconv.Atoi(wpid)
 	if err != nil {
-		err = fmt.Errorf("error converting WATCHDOG_PID: %s", err)
+		err = fmt.Errorf("can't convert WATCHDOG_PID as int: %s", err)
 		return
 	}
 	if os.Getpid() != wpidTyped {
