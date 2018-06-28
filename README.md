@@ -21,8 +21,9 @@ import (
 )
 
 // Init new notifier
-// If you os don't support systemd, it will return nil
-notifier, err := systemd.NewNotifier()
+// If you os does not support systemd, it will return nil
+// So you have to handle sysd != nil
+sysd, err := systemd.NewNotifier()
 if err != nil {
     log.Printf("can't start systemd notifier: %v\n", err)
 }
@@ -80,8 +81,10 @@ import (
     "github.com/iguanesolutions/go-systemd"
 )
 
-if err := sysnotifier.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
-    log.Fatalf("can't notify status to systemd: %v", err)
+if sysd != nil {
+    if err := sysd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
+        log.Printf("can't notify status to systemd: %v\n", err)
+    }
 }
 ```
 
