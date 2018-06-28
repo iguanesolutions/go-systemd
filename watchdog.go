@@ -73,6 +73,9 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 
 // SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *WatchDog) SendHeartbeat() error {
+	if c.notify == nil {
+		return errors.New("internal notifier is nil: WatchDog should be instancied with NewWatchdog()")
+	}
 	return c.notify.NotifyWatchDog()
 }
 
