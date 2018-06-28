@@ -59,7 +59,7 @@ import (
 // Notify to systemd that we are stopping
 var err error
 if sysd != nil {
-    if err = sysnotifier.NotifyStopping(); err != nil {
+    if err = sysd.NotifyStopping(); err != nil {
         log.Printf("can't notify stopping to systemd: %v\n", err)
     }
 }
