@@ -79,13 +79,12 @@ func (s *Notifier) send(state string) (err error) {
 	// Try to open socket
 	conn, err := net.DialUnix(s.socket.Net, nil, s.socket)
 	if err != nil {
-		err = fmt.Errorf("can't open unix socket: %v", err)
-		return
+		return fmt.Errorf("can't open unix socket: %v", err)
 	}
 	defer conn.Close()
 	// Write data into it
 	if _, err = conn.Write([]byte(state)); err != nil {
-		err = fmt.Errorf("can't write into the unix socket: %v", err)
+		return fmt.Errorf("can't write into the unix socket: %v", err)
 	}
 	return
 }
