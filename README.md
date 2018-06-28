@@ -21,9 +21,10 @@ import (
 )
 
 // Init new notifier
+// If you os don't support systemd, it will return nil
 notifier, err := systemd.NewNotifier()
 if err != nil {
-    log.Fatalf("can't start systemd notifier: %v", err)
+    log.Printf("can't start systemd notifier: %v\n", err)
 }
 // Init http server
 server := &http.Server{
@@ -34,12 +35,15 @@ server := &http.Server{
 // Do some more inits
 
 // Notify ready to systemd
-if err = sysd.NotifyReady(); err != nil {
-   log.Fatalf("can't notify ready to systemd: %v", err)
+if sysd != nil {
+    if err = sysd.NotifyReady(); err != nil {
+        log.Printf("can't notify ready to systemd: %v\n", err)
+    }
 }
+
 // Start the server
 if err = server.ListenAndServe(); err != nil {
-    log.Fatalf("can't start http server: %v", err)
+    log.Printf("can't start http server: %v\n", err)
 }
 ```
 
@@ -51,9 +55,12 @@ import (
     "github.com/iguanesolutions/go-systemd"
 )
 
+// Notify to systemd that we are stopping
 var err error
-if err = sysnotifier.NotifyStopping(); err != nil {
-    log.Fatalf("can't notify stopping to systemd: %v", err)
+if sysd != nil {
+    if err = sysnotifier.NotifyStopping(); err != nil {
+        log.Printf("can't notify stopping to systemd: %v\n", err)
+    }
 }
 
 // Stop some more things
@@ -62,7 +69,7 @@ if err = sysnotifier.NotifyStopping(); err != nil {
 ctx, cancelCtx := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancelCtx()
 if err = server.Shutdown(ctx); err != nil {
-    log.Fatalf("can't shutdown http server: %v", err)
+    log.Printf("can't shutdown http server: %v\n", err)
 }
 ```
 
