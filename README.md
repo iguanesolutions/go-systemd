@@ -48,8 +48,7 @@ if err = server.ListenAndServe(); err != nil {
 }
 ```
 
-When stopping, you can notify systemd that you are stopping before shutting down your http server
-and stopping your controllers
+When stopping, you can notify systemd that you have indeed received the SIGTERM and you have launched the stop procedure
 
 ```go
 import (
@@ -86,6 +85,18 @@ if sysd != nil {
         log.Printf("can't notify status to systemd: %v\n", err)
     }
 }
+```
+
+systemctl status output example:
+
+```systemctlstatus
+user@host:~$ systemctl status superapp.service
+● superapp.service - superapp
+   Loaded: loaded (/lib/systemd/system/superapp.service; enabled)
+   Active: active (running) since Mon 2018-06-25 08:54:35 UTC; 3 days ago
+ Main PID: 2604 (superapp)
+   Status: "There is currently 1506 active connections"
+   ...
 ```
 
 ## Watchdog
