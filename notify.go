@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Notifier wraps and facilitate systemd notify communications
+// Notifier wraps and facilitates systemd notify communications
 type Notifier struct {
 	socket *net.UnixAddr
 }
@@ -15,17 +15,17 @@ type Notifier struct {
 // NewNotifier returns an initialized and ready to use Notifier if systemd notify is supported
 func NewNotifier() (notifier *Notifier, err error) {
 	// Validate Systemd notify is supported
-	socketAddr := net.UnixAddr{
-		Name: os.Getenv("NOTIFY_SOCKET"),
-		Net:  "unixgram",
-	}
-	if socketAddr.Name == "" {
+	sockName := os.Getenv("NOTIFY_SOCKET")
+	if sockName == "" {
 		err = errors.New("notifications are not supported (NOTIFY_SOCKET is unset)")
 		return
 	}
-	// All good return the object
+	// All good return the notifier
 	notifier = &Notifier{
-		socket: &socketAddr,
+		socket: &net.UnixAddr{
+			Name: sockName,
+			Net:  "unixgram",
+		},
 	}
 	return
 }
