@@ -8,8 +8,12 @@ Easily communicate with systemd when run as daemon within a service unit.
 
 With notifier you can notify to systemd that your program is starting, stopping, reloading...
 
-For example, if your app spawn an http server it's good to notify systemd that you are starting right before
-starting your http server
+For example, if your daemon needs some time for initializing its controllers before really being considered as ready, you can specify to systemd that this is a "notify" service and send it a notification when ready.
+
+```systemdunit
+[Service]
+Type=notify
+```
 
 ```go
 import (
