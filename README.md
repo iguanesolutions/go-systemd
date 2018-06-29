@@ -21,7 +21,7 @@ import (
 )
 
 // Init new notifier
-// If you os does not support systemd, it will return nil
+// If your os does not support systemd, it will return nil
 // So you have to handle sysd != nil
 sysd, err := systemd.NewNotifier()
 if err != nil {
@@ -101,4 +101,39 @@ user@host:~$ systemctl status superapp.service
 
 ## Watchdog
 
-`todo`
+```systemdunit
+[Service]
+Type=notify
+WatchdogSec=30s
+```
+
+```go
+// Init systemd watchdog, same as the notifier, it can be nil if your os does not support it
+watchdog, err := systemd.NewWatchdog()
+if err != nil {
+    log.Printf("can't initialize systemd watchdog controller: %v\n", err)
+}
+
+if watchdog != nil {
+    // Then start a watcher worker
+    go func() {
+        ticker := watchdog.NewTicker()
+        defer ticker.Stop()
+        for {
+            select {
+            // Ticker chan
+            case <-ticker.C:
+                // Check if something wrong, if not send heartbeat
+                if allGood {
+                    if err = watchdog.SendHeartbeat(); err != nil {
+                        log.Printf("can't send systemd watchdog heartbeat: %v\n", err)
+                    }
+                }
+            // Some stop signal chan
+            case <-stopSig:
+                return
+            }
+        }
+    }()
+}
+```
