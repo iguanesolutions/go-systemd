@@ -61,7 +61,7 @@ func NotifyWatchDog() error {
 	return send("WATCHDOG=1")
 }
 
-// NotifyWatchDogUSec sends systemd notify WATCHDOG_USEC=%d{usec}
+// NotifyWatchDogUSec sends systemd notify WATCHDOG_USEC=%d{µsec}
 func NotifyWatchDogUSec(usec int64) error {
 	return send(fmt.Sprintf("WATCHDOG_USEC=%d", usec))
 }
