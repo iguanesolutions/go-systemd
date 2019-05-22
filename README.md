@@ -1,8 +1,6 @@
 # go-systemd
 
-[![GoDoc](https://godoc.org/github.com/iguanesolutions/go-systemd?status.svg)](https://godoc.org/github.com/iguanesolutions/go-systemd)
-
-[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd) [![GoDoc](https://godoc.org/github.com/iguanesolutions/go-systemd?status.svg)](https://godoc.org/github.com/iguanesolutions/go-systemd)
 
 Easily communicate with systemd when run as daemon within a service unit.
 
