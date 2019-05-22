@@ -17,16 +17,9 @@ Type=notify
 
 ```go
 import (
-    "github.com/iguanesolutions/go-systemd"
+    systemd "github.com/iguanesolutions/go-systemd"
 )
 
-// Init new notifier
-// If your os does not support systemd, it will return nil
-// So you have to handle sysd != nil
-sysd, err := systemd.NewNotifier()
-if err != nil {
-    log.Printf("can't start systemd notifier: %v\n", err)
-}
 // Init http server
 server := &http.Server{
     Addr:    "host:port",
@@ -36,15 +29,14 @@ server := &http.Server{
 // Do some more inits
 
 // Notify ready to systemd
-if sysd != nil {
-    if err = sysd.NotifyReady(); err != nil {
-        log.Printf("can't notify ready to systemd: %v\n", err)
-    }
+if err = systemd.NotifyReady(); err != nil {
+    log.Printf("failed to notify ready to systemd: %v\n", err)
 }
+
 
 // Start the server
 if err = server.ListenAndServe(); err != nil {
-    log.Printf("can't start http server: %v\n", err)
+    log.Printf("failed to start http server: %v\n", err)
 }
 ```
 
@@ -52,15 +44,13 @@ When stopping, you can notify systemd that you have indeed received the SIGTERM 
 
 ```go
 import (
-    "github.com/iguanesolutions/go-systemd"
+    systemd "github.com/iguanesolutions/go-systemd"
 )
 
 // Notify to systemd that we are stopping
 var err error
-if sysd != nil {
-    if err = sysd.NotifyStopping(); err != nil {
-        log.Printf("can't notify stopping to systemd: %v\n", err)
-    }
+if err = systemd.NotifyStopping(); err != nil {
+    log.Printf("failed to notify stopping to systemd: %v\n", err)
 }
 
 // Stop some more things
@@ -69,7 +59,7 @@ if sysd != nil {
 ctx, cancelCtx := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancelCtx()
 if err = server.Shutdown(ctx); err != nil {
-    log.Printf("can't shutdown http server: %v\n", err)
+    log.Printf("failed to shutdown http server: %v\n", err)
 }
 ```
 
@@ -77,12 +67,12 @@ You can also notify status to systemd
 
 ```go
 import (
-    "github.com/iguanesolutions/go-systemd"
+    systemd "github.com/iguanesolutions/go-systemd"
 )
 
 if sysd != nil {
-    if err := sysd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
-        log.Printf("can't notify status to systemd: %v\n", err)
+    if err := systemd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
+        log.Printf("failed to notify status to systemd: %v\n", err)
     }
 }
 ```
@@ -111,7 +101,7 @@ WatchdogSec=30s
 // Init systemd watchdog, same as the notifier, it can be nil if your os does not support it
 watchdog, err := systemd.NewWatchdog()
 if err != nil {
-    log.Printf("can't initialize systemd watchdog controller: %v\n", err)
+    log.Printf("failed to initialize systemd watchdog controller: %v\n", err)
 }
 
 if watchdog != nil {
@@ -126,7 +116,7 @@ if watchdog != nil {
                 // Check if something wrong, if not send heartbeat
                 if allGood {
                     if err = watchdog.SendHeartbeat(); err != nil {
-                        log.Printf("can't send systemd watchdog heartbeat: %v\n", err)
+                        log.Printf("failed to send systemd watchdog heartbeat: %v\n", err)
                     }
                 }
             // Some stop signal chan
