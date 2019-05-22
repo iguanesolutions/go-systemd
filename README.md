@@ -129,3 +129,30 @@ if watchdog != nil {
     }()
 }
 ```
+
+## Socket activation
+
+See: [http://0pointer.de/blog/projects/socket-activation.html](http://0pointer.de/blog/projects/socket-activation.html) for more information.
+
+With the following socket file:
+
+```systemdsocket
+[Socket]
+ListenStream=9091
+BindIPv6Only=both
+
+[Install]
+WantedBy=sockets.target
+```
+
+Retrieve the socket and serve it.
+
+```go
+listener, err := activation.Listen(":9091")
+if err != nil {
+    log.Fatal(err)
+}
+http.Serve(listener, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hello from 9091")
+}))
+```
