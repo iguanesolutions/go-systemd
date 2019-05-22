@@ -1,90 +1,81 @@
 package systemd
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 )
 
-// Notifier wraps and facilitates systemd notify communications
-type Notifier struct {
-	socket *net.UnixAddr
-}
+var socket *net.UnixAddr
 
-// NewNotifier returns an initialized and ready to use Notifier if systemd notify is supported
-func NewNotifier() (notifier *Notifier, err error) {
-	// Validate Systemd notify is supported
-	sockName := os.Getenv("NOTIFY_SOCKET")
-	if sockName == "" {
-		err = errors.New("notifications are not supported (NOTIFY_SOCKET is unset)")
+func init() {
+	notifySocket := os.Getenv("NOTIFY_SOCKET")
+	if notifySocket == "" {
+		log.Println("warning: systemd notify is disabled")
 		return
 	}
-	// All good return the notifier
-	notifier = &Notifier{
-		socket: &net.UnixAddr{
-			Name: sockName,
-			Net:  "unixgram",
-		},
+	socket = &net.UnixAddr{
+		Name: notifySocket,
+		Net:  "unixgram",
 	}
-	return
 }
 
 // NotifyReady sends systemd notify READY=1
-func (s *Notifier) NotifyReady() error {
-	return s.send("READY=1")
+func NotifyReady() error {
+	return send("READY=1")
 }
 
 // NotifyReloading sends systemd notify RELOADING=1
-func (s *Notifier) NotifyReloading() error {
-	return s.send("RELOADING=1")
+func NotifyReloading() error {
+	return send("RELOADING=1")
 }
 
 // NotifyStopping sends systemd notify STOPPING=1
-func (s *Notifier) NotifyStopping() error {
-	return s.send("STOPPING=1")
+func NotifyStopping() error {
+	return send("STOPPING=1")
 }
 
 // NotifyStatus sends systemd notify STATUS=%s{status}
-func (s *Notifier) NotifyStatus(status string) error {
-	return s.send(fmt.Sprintf("STATUS=%s", status))
+func NotifyStatus(status string) error {
+	return send(fmt.Sprintf("STATUS=%s", status))
 }
 
 // NotifyErrNo sends systemd notify ERRNO=%d{errno}
-func (s *Notifier) NotifyErrNo(errno int) error {
-	return s.send(fmt.Sprintf("ERRNO=%d", errno))
+func NotifyErrNo(errno int) error {
+	return send(fmt.Sprintf("ERRNO=%d", errno))
 }
 
 // NotifyBusError sends systemd notify BUSERROR=%s{buserror}
-func (s *Notifier) NotifyBusError(buserror string) error {
-	return s.send(fmt.Sprintf("BUSERROR=%s", buserror))
+func NotifyBusError(buserror string) error {
+	return send(fmt.Sprintf("BUSERROR=%s", buserror))
 }
 
 // NotifyMainPID sends systemd notify MAINPID=%d{mainpid}
-func (s *Notifier) NotifyMainPID(mainpid int) error {
-	return s.send(fmt.Sprintf("MAINPID=%d", mainpid))
+func NotifyMainPID(mainpid int) error {
+	return send(fmt.Sprintf("MAINPID=%d", mainpid))
 }
 
 // NotifyWatchDog sends systemd notify WATCHDOG=1
-func (s *Notifier) NotifyWatchDog() error {
-	return s.send("WATCHDOG=1")
+func NotifyWatchDog() error {
+	return send("WATCHDOG=1")
 }
 
 // NotifyWatchDogUSec sends systemd notify WATCHDOG_USEC=%d{usec}
-func (s *Notifier) NotifyWatchDogUSec(usec int64) (err error) {
-	return s.send(fmt.Sprintf("WATCHDOG_USEC=%d", usec))
+func NotifyWatchDogUSec(usec int64) error {
+	return send(fmt.Sprintf("WATCHDOG_USEC=%d", usec))
 }
 
-func (s *Notifier) send(state string) (err error) {
-	// Try to open socket
-	conn, err := net.DialUnix(s.socket.Net, nil, s.socket)
-	if err != nil {
-		return fmt.Errorf("can't open unix socket: %v", err)
+func send(state string) error {
+	if socket != nil {
+		conn, err := net.DialUnix(socket.Net, nil, socket)
+		if err != nil {
+			return fmt.Errorf("can't open unix socket: %v", err)
+		}
+		defer conn.Close()
+		if _, err = conn.Write([]byte(state)); err != nil {
+			return fmt.Errorf("can't write into the unix socket: %v", err)
+		}
 	}
-	defer conn.Close()
-	// Write data into it
-	if _, err = conn.Write([]byte(state)); err != nil {
-		return fmt.Errorf("can't write into the unix socket: %v", err)
-	}
-	return
+	return nil
 }
