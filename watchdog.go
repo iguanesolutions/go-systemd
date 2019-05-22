@@ -10,7 +10,6 @@ import (
 
 // WatchDog is an interface to the systemd watchdog mechanism
 type WatchDog struct {
-	notify   *Notifier
 	interval time.Duration
 	checks   time.Duration
 }
@@ -22,15 +21,8 @@ func NewWatchdog() (wd *WatchDog, err error) {
 	if err != nil {
 		return
 	}
-	// Spawn the systemd notifier
-	notifier, err := NewNotifier()
-	if err != nil {
-		err = fmt.Errorf("can't initialize the systemd notify controller: %v", err)
-		return
-	}
 	// Return the initialized controller
 	wd = &WatchDog{
-		notify:   notifier,
 		interval: interval,
 		checks:   interval / 3, // 2 ?
 	}
@@ -73,10 +65,10 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 
 // SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *WatchDog) SendHeartbeat() error {
-	if c.notify == nil {
-		return errors.New("internal notifier is nil: WatchDog should be instancied with NewWatchdog()")
+	if socket == nil {
+		return errors.New("failed to notify watchdog: systemd notify is diabled")
 	}
-	return c.notify.NotifyWatchDog()
+	return NotifyWatchDog()
 }
 
 // GetChecksDuration returns the ideal time for a client to perform (active or passive collect) checks.
