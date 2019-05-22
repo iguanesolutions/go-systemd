@@ -72,11 +72,10 @@ import (
     systemd "github.com/iguanesolutions/go-systemd"
 )
 
-if sysd != nil {
-    if err := systemd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
-        log.Printf("failed to notify status to systemd: %v\n", err)
-    }
+if err := systemd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
+    log.Printf("failed to notify status to systemd: %v\n", err)
 }
+
 ```
 
 systemctl status output example:
