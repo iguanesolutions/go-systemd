@@ -10,6 +10,8 @@ With notifier you can notify to systemd that your program is starting, stopping,
 
 For example, if your daemon needs some time for initializing its controllers before really being considered as ready, you can specify to systemd that this is a "notify" service and send it a notification when ready.
 
+It is safe to use it even if systemd notify support is disabled.
+
 ```systemdunit
 [Service]
 Type=notify
