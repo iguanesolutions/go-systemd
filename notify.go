@@ -21,6 +21,11 @@ func init() {
 	}
 }
 
+// IsNotifyEnabled tells if systemd notify is enabled or not.
+func IsNotifyEnabled() bool {
+	return socket != nil
+}
+
 // NotifyReady sends systemd notify READY=1
 func NotifyReady() error {
 	return send("READY=1")
