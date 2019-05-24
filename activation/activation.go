@@ -1,6 +1,7 @@
 package activation
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -20,7 +21,7 @@ var listeners []net.Listener
 func init() {
 	var err error
 	if listeners, err = activationListeners(); err != nil {
-		log.Println("warning: failed to init activation listeners:", err)
+		log.Println("warning: systemd socket activation disabled")
 	}
 }
 
@@ -43,6 +44,9 @@ func Listen(addr string) (net.Listener, error) {
 }
 
 func activationListeners() ([]net.Listener, error) {
+	if err := checkEnv(); err != nil {
+		return nil, err
+	}
 	listenPid, err := strconv.Atoi(os.Getenv("LISTEN_PID"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse LISTEN_PID as int: %v", err)
@@ -87,4 +91,18 @@ func activationListeners() ([]net.Listener, error) {
 		listeners[i] = listener
 	}
 	return listeners, nil
+}
+
+func checkEnv() error {
+	_, ok := os.LookupEnv("LISTEN_PID")
+	if !ok {
+		return errors.New("LISTEN_PID not set")
+	}
+	if _, ok = os.LookupEnv("LISTEN_FDS"); !ok {
+		return errors.New("LISTEN_FDS not set")
+	}
+	if _, ok = os.LookupEnv("LISTEN_FDNAMES"); !ok {
+		return errors.New("LISTEN_FDNAMES not set")
+	}
+	return nil
 }
