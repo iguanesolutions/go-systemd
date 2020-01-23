@@ -2,7 +2,6 @@ package systemd
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 )
@@ -12,7 +11,6 @@ var socket *net.UnixAddr
 func init() {
 	notifySocket := os.Getenv("NOTIFY_SOCKET")
 	if notifySocket == "" {
-		log.Println("warning: systemd notify is disabled")
 		return
 	}
 	socket = &net.UnixAddr{
