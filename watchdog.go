@@ -65,7 +65,7 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 
 // SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *WatchDog) SendHeartbeat() error {
-	if socket == nil {
+	if notifySocket == nil {
 		return errors.New("failed to notify watchdog: systemd notify is diabled")
 	}
 	return NotifyWatchDog()
