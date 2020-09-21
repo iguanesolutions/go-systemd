@@ -10,7 +10,7 @@ With notifier you can notify to systemd that your program is starting, stopping,
 
 For example, if your daemon needs some time for initializing its controllers before really being considered as ready, you can specify to systemd that this is a "notify" service and send it a notification when ready.
 
-It is safe to use it even if systemd notify support is disabled.
+It is safe to use it even if systemd notify support is disabled (noop call).
 
 ```systemdunit
 [Service]
@@ -19,7 +19,7 @@ Type=notify
 
 ```go
 import (
-    systemd "github.com/iguanesolutions/go-systemd"
+    sysdnotify "github.com/iguanesolutions/go-systemd/v5/notify"
 )
 
 // Init http server
@@ -28,13 +28,14 @@ server := &http.Server{
     Handler: myHTTPHandler,
 }
 
-// Do some more inits
+/*
+    Do some more inits
+*/
 
 // Notify ready to systemd
-if err = systemd.NotifyReady(); err != nil {
+if err = sysdnotify.Ready(); err != nil {
     log.Printf("failed to notify ready to systemd: %v\n", err)
 }
-
 
 // Start the server
 if err = server.ListenAndServe(); err != nil {
@@ -46,16 +47,18 @@ When stopping, you can notify systemd that you have indeed received the SIGTERM 
 
 ```go
 import (
-    systemd "github.com/iguanesolutions/go-systemd"
+    sysdnotify "github.com/iguanesolutions/go-systemd/v5/notify"
 )
 
 // Notify to systemd that we are stopping
 var err error
-if err = systemd.NotifyStopping(); err != nil {
+if err = sysdnotify.Stopping(); err != nil {
     log.Printf("failed to notify stopping to systemd: %v\n", err)
 }
 
-// Stop some more things
+/*
+    Stop others things
+*/
 
 // Stop the server (with timeout)
 ctx, cancelCtx := context.WithTimeout(context.Background(), 5*time.Second)
@@ -69,10 +72,10 @@ You can also notify status to systemd
 
 ```go
 import (
-    systemd "github.com/iguanesolutions/go-systemd"
+    sysdnotify "github.com/iguanesolutions/go-systemd/v5/notify"
 )
 
-if err := systemd.NotifyStatus(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
+if err := sysdnotify.Status(fmt.Sprintf("There is currently %d active connections", activeConns)); err != nil {
     log.Printf("failed to notify status to systemd: %v\n", err)
 }
 
@@ -99,8 +102,12 @@ WatchdogSec=30s
 ```
 
 ```go
+import (
+    sysdwatchdog "github.com/iguanesolutions/go-systemd/v5/notify/watchdog"
+)
+
 // Init systemd watchdog, same as the notifier, it can be nil if your os does not support it
-watchdog, err := systemd.NewWatchdog()
+watchdog, err := sysdwatchdog.New()
 if err != nil {
     log.Printf("failed to initialize systemd watchdog controller: %v\n", err)
 }
