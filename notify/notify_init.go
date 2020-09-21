@@ -1,6 +1,6 @@
 // +build linux
 
-package systemd
+package sysdnotify
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 
 func init() {
 	if notifySocketName := os.Getenv("NOTIFY_SOCKET"); notifySocketName != "" {
-		notifySocket = &net.UnixAddr{
+		socket = &net.UnixAddr{
 			Name: notifySocketName,
 			Net:  "unixgram",
 		}

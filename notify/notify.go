@@ -1,15 +1,15 @@
-package systemd
+package sysdnotify
 
 import (
 	"fmt"
 	"net"
 )
 
-var notifySocket *net.UnixAddr
+var socket *net.UnixAddr
 
 // IsNotifyEnabled tells if systemd notify socket has been detected or not.
 func IsNotifyEnabled() bool {
-	return notifySocket != nil
+	return socket != nil
 }
 
 // NotifyReady sends systemd notify READY=1
@@ -61,10 +61,10 @@ func NotifyWatchDogUSec(usec int64) error {
 // If the notify socket was not detected, it is a noop call.
 // Use IsNotifyEnabled() to determine if the notify socket has been detected.
 func NotifyRaw(state string) error {
-	if notifySocket == nil {
+	if socket == nil {
 		return nil
 	}
-	conn, err := net.DialUnix(notifySocket.Net, nil, notifySocket)
+	conn, err := net.DialUnix(socket.Net, nil, socket)
 	if err != nil {
 		return fmt.Errorf("can't open unix socket: %v", err)
 	}
