@@ -16,8 +16,8 @@ type WatchDog struct {
 	checks   time.Duration
 }
 
-// NewWatchdog returns an initialized and ready to use WatchDog
-func NewWatchdog() (wd *WatchDog, err error) {
+// New returns an initialized and ready to use WatchDog
+func New() (wd *WatchDog, err error) {
 	// Check WatchDog is supported and usable
 	interval, err := getWatchDogInterval()
 	if err != nil {
