@@ -7,60 +7,60 @@ import (
 
 var socket *net.UnixAddr
 
-// IsNotifyEnabled tells if systemd notify socket has been detected or not.
-func IsNotifyEnabled() bool {
+// IsEnabled tells if systemd notify socket has been detected or not.
+func IsEnabled() bool {
 	return socket != nil
 }
 
-// NotifyReady sends systemd notify READY=1
-func NotifyReady() error {
-	return NotifyRaw("READY=1")
+// Ready sends systemd notify READY=1
+func Ready() error {
+	return Send("READY=1")
 }
 
-// NotifyReloading sends systemd notify RELOADING=1
-func NotifyReloading() error {
-	return NotifyRaw("RELOADING=1")
+// Reloading sends systemd notify RELOADING=1
+func Reloading() error {
+	return Send("RELOADING=1")
 }
 
-// NotifyStopping sends systemd notify STOPPING=1
-func NotifyStopping() error {
-	return NotifyRaw("STOPPING=1")
+// Stopping sends systemd notify STOPPING=1
+func Stopping() error {
+	return Send("STOPPING=1")
 }
 
-// NotifyStatus sends systemd notify STATUS=%s{status}
-func NotifyStatus(status string) error {
-	return NotifyRaw(fmt.Sprintf("STATUS=%s", status))
+// Status sends systemd notify STATUS=%s{status}
+func Status(status string) error {
+	return Send(fmt.Sprintf("STATUS=%s", status))
 }
 
-// NotifyErrNo sends systemd notify ERRNO=%d{errno}
-func NotifyErrNo(errno int) error {
-	return NotifyRaw(fmt.Sprintf("ERRNO=%d", errno))
+// ErrNo sends systemd notify ERRNO=%d{errno}
+func ErrNo(errno int) error {
+	return Send(fmt.Sprintf("ERRNO=%d", errno))
 }
 
-// NotifyBusError sends systemd notify BUSERROR=%s{buserror}
-func NotifyBusError(buserror string) error {
-	return NotifyRaw(fmt.Sprintf("BUSERROR=%s", buserror))
+// BusError sends systemd notify BUSERROR=%s{buserror}
+func BusError(buserror string) error {
+	return Send(fmt.Sprintf("BUSERROR=%s", buserror))
 }
 
-// NotifyMainPID sends systemd notify MAINPID=%d{mainpid}
-func NotifyMainPID(mainpid int) error {
-	return NotifyRaw(fmt.Sprintf("MAINPID=%d", mainpid))
+// MainPID sends systemd notify MAINPID=%d{mainpid}
+func MainPID(mainpid int) error {
+	return Send(fmt.Sprintf("MAINPID=%d", mainpid))
 }
 
-// NotifyWatchDog sends systemd notify WATCHDOG=1
-func NotifyWatchDog() error {
-	return NotifyRaw("WATCHDOG=1")
+// WatchDog sends systemd notify WATCHDOG=1
+func WatchDog() error {
+	return Send("WATCHDOG=1")
 }
 
-// NotifyWatchDogUSec sends systemd notify WATCHDOG_USEC=%d{µsec}
-func NotifyWatchDogUSec(usec int64) error {
-	return NotifyRaw(fmt.Sprintf("WATCHDOG_USEC=%d", usec))
+// WatchDogUSec sends systemd notify WATCHDOG_USEC=%d{µsec}
+func WatchDogUSec(usec int64) error {
+	return Send(fmt.Sprintf("WATCHDOG_USEC=%d", usec))
 }
 
-// NotifyRaw send state thru the notify socket if any.
+// Send state thru the notify socket if any.
 // If the notify socket was not detected, it is a noop call.
-// Use IsNotifyEnabled() to determine if the notify socket has been detected.
-func NotifyRaw(state string) error {
+// Use IsEnabled() to determine if the notify socket has been detected.
+func Send(state string) error {
 	if socket == nil {
 		return nil
 	}
