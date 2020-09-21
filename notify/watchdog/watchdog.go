@@ -24,7 +24,7 @@ func NewWatchdog() (wd *WatchDog, err error) {
 	// Return the initialized controller
 	wd = &WatchDog{
 		interval: interval,
-		checks:   interval / 3, // 2 ?
+		checks:   interval / 2,
 	}
 	return
 }
