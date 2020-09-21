@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	sysdnotify "github.com/iguanesolutions/go-systemd/v5/notify"
 )
 
 // WatchDog is an interface to the systemd watchdog mechanism
@@ -65,10 +67,10 @@ func getWatchDogInterval() (interval time.Duration, err error) {
 
 // SendHeartbeat sends a keepalive notification to systemd watchdog
 func (c *WatchDog) SendHeartbeat() error {
-	if notifySocket == nil {
+	if !sysdnotify.IsEnabled() {
 		return errors.New("failed to notify watchdog: systemd notify is diabled")
 	}
-	return NotifyWatchDog()
+	return sysdnotify.WatchDog()
 }
 
 // GetChecksDuration returns the ideal time for a client to perform (active or passive collect) checks.
