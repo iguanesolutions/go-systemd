@@ -1,10 +1,12 @@
 # go-systemd
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd) [![GoDoc](https://godoc.org/github.com/iguanesolutions/go-systemd?status.svg)](https://godoc.org/github.com/iguanesolutions/go-systemd)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd) [![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5)
 
 Easily communicate with systemd when run as daemon within a service unit.
 
 ## Notifier
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5/notify)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5/notify)
 
 With notifier you can notify to systemd that your program is starting, stopping, reloading...
 
@@ -93,7 +95,9 @@ user@host:~$ systemctl status superapp.service
    ...
 ```
 
-## Watchdog
+### Watchdog
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5/notify/watchdog)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5/notify/watchdog)
 
 ```systemdunit
 [Service]
