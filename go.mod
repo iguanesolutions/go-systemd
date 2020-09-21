@@ -1,3 +1,3 @@
-module github.com/iguanesolutions/go-systemd/v4
+module github.com/iguanesolutions/go-systemd/v5
 
 go 1.13
