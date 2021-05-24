@@ -14,6 +14,26 @@ import (
 	"github.com/miekg/dns"
 )
 
+// resolver is the interface to implements the same methods as the net.Resolver
+type resolver interface {
+	LookupAddr(ctx context.Context, addr string) (names []string, err error)
+	LookupCNAME(ctx context.Context, host string) (cname string, err error)
+	LookupHost(ctx context.Context, host string) (addrs []string, err error)
+	LookupIP(ctx context.Context, network, host string) ([]net.IP, error)
+	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
+	LookupMX(ctx context.Context, name string) ([]*net.MX, error)
+	LookupNS(ctx context.Context, name string) ([]*net.NS, error)
+	LookupPort(ctx context.Context, network, service string) (port int, err error)
+	LookupSRV(ctx context.Context, service, proto, name string) (cname string, addrs []*net.SRV, err error)
+	LookupTXT(ctx context.Context, name string) ([]string, error)
+}
+
+var (
+	// ensure that types implement resolver interface
+	_ resolver = &Resolver{}
+	_ resolver = &net.Resolver{}
+)
+
 // Resolver represents the systemd-resolved resolver
 // throught dbus connection.
 type Resolver struct {
@@ -69,6 +89,7 @@ func NewResolver(opts ...resolverOption) (*Resolver, error) {
 }
 
 // Close closes the current dbus connection.
+// You need to close the connection when you've done with it.
 func (r *Resolver) Close() error {
 	return r.conn.Close()
 }
@@ -287,6 +308,19 @@ func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error)
 		}
 	}
 	return nss, nil
+}
+
+// LookupPort looks up the port for the given network and service.
+func (r *Resolver) LookupPort(ctx context.Context, network, service string) (port int, err error) {
+	err = errNotSupported
+	return
+}
+
+// LookupSRV tries to resolve an SRV query of the given service, protocol, and domain name.
+// The proto is "tcp" or "udp". The returned records are sorted by priority and randomized by weight within a priority.
+func (r *Resolver) LookupSRV(ctx context.Context, service, proto, name string) (cname string, addrs []*net.SRV, err error) {
+	err = errNotSupported
+	return
 }
 
 // LookupTXT returns the DNS TXT records for the given domain name.
