@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/godbus/dbus/v5"
-	"golang.org/x/net/dns/dnsmessage"
+	"github.com/miekg/dns"
 )
 
 const (
@@ -132,23 +132,13 @@ func (c *Conn) ResolveAddress(ctx context.Context, ifindex int, family int, addr
 }
 
 type ResourceRecord struct {
-	IfIndex int // network interface index
-	Type    dnsmessage.Type
-	Class   dnsmessage.Class
-
-	// TODO: Parse raw RR data
+	IfIndex int       // network interface index
+	Type    dns.Type  // dns type
+	Class   dns.Class // dns class
 	// The raw RR data starts with the RR's domain name, in the original casing, followed by the RR type, class,
 	// TTL and RDATA, in the binary format documented in RFC 1035. For RRs that support name compression in the payload
 	// (such as MX or PTR), the compression is expanded in the returned data.
 	Data []byte
-}
-
-// TODO
-// ResolveRecord
-func (c *Conn) ResolveRecord(ctx context.Context, ifindex int, name string, class dnsmessage.Class, rtype dnsmessage.Type, flags uint64) (records []ResourceRecord, outflags uint64, err error) {
-	//err = c.Call(ctx, "ResolveRecord", ifindex, name, class, rtype, flags).Store(&records, &outflags)
-	err = errNotSupported
-	return
 }
 
 func (r ResourceRecord) String() string {
@@ -156,14 +146,127 @@ func (r ResourceRecord) String() string {
 	IfIndex: %d,
 	Type:    %s,
 	Class:   %s,
-	RData:   %s,
-}`, r.IfIndex, r.Type.String(), r.Class.String(), string(r.Data))
+	Data:    %v,
+}`, r.IfIndex, r.Type.String(), r.Class.String(), r.Data)
+}
+
+func (r ResourceRecord) Unpack() (dns.RR, error) {
+	rr, _, err := dns.UnpackRR(r.Data, 0)
+	if err != nil {
+		return nil, err
+	}
+	return rr, nil
+}
+
+func (r ResourceRecord) CNAME() (*dns.CNAME, error) {
+	rr, err := r.Unpack()
+	if err != nil {
+		return nil, err
+	}
+	if rr.Header().Rrtype != dns.TypeCNAME {
+		return nil, errors.New("not an CNAME record type")
+	}
+	cname, ok := rr.(*dns.CNAME)
+	if !ok {
+		return nil, errors.New("dns.RR is not a *dns.CNAME")
+	}
+	return cname, nil
+}
+
+func (r ResourceRecord) MX() (*dns.MX, error) {
+	rr, err := r.Unpack()
+	if err != nil {
+		return nil, err
+	}
+	if rr.Header().Rrtype != dns.TypeMX {
+		return nil, errors.New("not an MX record type")
+	}
+	mx, ok := rr.(*dns.MX)
+	if !ok {
+		return nil, errors.New("dns.RR is not a *dns.MX")
+	}
+	return mx, nil
+}
+
+func (r ResourceRecord) NS() (*dns.NS, error) {
+	rr, err := r.Unpack()
+	if err != nil {
+		return nil, err
+	}
+	if rr.Header().Rrtype != dns.TypeNS {
+		return nil, errors.New("not an NS record type")
+	}
+	ns, ok := rr.(*dns.NS)
+	if !ok {
+		return nil, errors.New("dns.RR is not a *dns.NS")
+	}
+	return ns, nil
+}
+
+func (r ResourceRecord) SRV() (*dns.SRV, error) {
+	rr, err := r.Unpack()
+	if err != nil {
+		return nil, err
+	}
+	if rr.Header().Rrtype != dns.TypeSRV {
+		return nil, errors.New("not an SRV record type")
+	}
+	srv, ok := rr.(*dns.SRV)
+	if !ok {
+		return nil, errors.New("dns.RR is not a *dns.SRV")
+	}
+	return srv, nil
+}
+
+func (r ResourceRecord) TXT() (*dns.TXT, error) {
+	rr, err := r.Unpack()
+	if err != nil {
+		return nil, err
+	}
+	if rr.Header().Rrtype != dns.TypeTXT {
+		return nil, errors.New("not an TXT record type")
+	}
+	txt, ok := rr.(*dns.TXT)
+	if !ok {
+		return nil, errors.New("dns.RR is not a *dns.TXT")
+	}
+	return txt, nil
+}
+
+// ResolveRecord takes a DNS resource record (RR) type, class and name, and retrieves the full resource record set (RRset), including the RDATA, for it.
+// ctx: Context to use
+// ifindex: Network interface index where to look (0 means any)
+// name: Specifies the RR domain name to look up
+// class: 16-bit dns class
+// rtype: 16-bit dns type
+// flags: Input flags parameter
+func (c *Conn) ResolveRecord(ctx context.Context, ifindex int, name string, class dns.Class, rtype dns.Type, flags uint64) (records []ResourceRecord, outflags uint64, err error) {
+	err = c.Call(ctx, "ResolveRecord", ifindex, name, class, rtype, flags).Store(&records, &outflags)
+	return
+}
+
+type SRVRecord struct {
+	Priority  uint16
+	Weight    uint16
+	Port      uint16
+	Hostname  string
+	Addresses []Address
+}
+
+func (r SRVRecord) String() string {
+	return fmt.Sprintf(`{
+	Priority:  %d,
+	Weight:    %d,
+	Port:      %d,
+	Hostname:  %s,
+	Addresses: %v,
+}`, r.Priority, r.Weight, r.Port, r.Hostname, r.Addresses)
 }
 
 // TODO
 // ResolveService
 func (c *Conn) ResolveService(ctx context.Context, ifindex int, name string, stype string, domain string, family int,
-	flags uint64) (srvData []interface{}, txtData []interface{}, canonicalName string, canonicalType string, canonicalDomain string, outflags uint64, err error) {
+	flags uint64) (srvData []SRVRecord, txtData []interface{}, canonicalName string, canonicalType string, canonicalDomain string, outflags uint64, err error) {
 	//err = c.Call(ctx, "ResolveService", ifindex, name, stype, domain, family, flags).Store(&srvData, &txtData, &canonicalName, &canonicalType, &canonicalDomain, &outflags)
 	err = errNotSupported
 	return

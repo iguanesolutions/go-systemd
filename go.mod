@@ -4,5 +4,6 @@ go 1.13
 
 require (
 	github.com/godbus/dbus/v5 v5.0.4
-	golang.org/x/net v0.0.0-20210521195947-fe42d452be8f
+	github.com/miekg/dns v1.1.42
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 )

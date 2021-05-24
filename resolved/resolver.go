@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/miekg/dns"
 )
 
 // Resolver represents the systemd-resolved resolver
@@ -169,9 +171,133 @@ func (r *Resolver) LookupAddr(ctx context.Context, addr string) (names []string,
 	return
 }
 
+func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error) {
+	if host == "" {
+		return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+	records, _, err := r.conn.ResolveRecord(ctx, 0, host, dns.ClassINET, dns.Type(dns.TypeCNAME), 0)
+	if err != nil {
+		return "", err
+	}
+	for _, record := range records {
+		recordCNAME, err := record.CNAME()
+		if err != nil {
+			return "", err
+		}
+		return recordCNAME.Target, nil
+	}
+	return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+}
+
+func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error) {
+	if !isDomainName(name) {
+		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
+	}
+	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeMX), 0)
+	if err != nil {
+		return nil, err
+	}
+	mxs := make([]*net.MX, len(records))
+	for i, record := range records {
+		mx, err := record.MX()
+		if err != nil {
+			return nil, err
+		}
+		mxs[i] = &net.MX{
+			Host: mx.Mx,
+			Pref: mx.Preference,
+		}
+	}
+	return mxs, nil
+}
+
+func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error) {
+	if !isDomainName(name) {
+		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
+	}
+	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeNS), 0)
+	if err != nil {
+		return nil, err
+	}
+	nss := make([]*net.NS, len(records))
+	for i, record := range records {
+		ns, err := record.NS()
+		if err != nil {
+			return nil, err
+		}
+		nss[i] = &net.NS{
+			Host: ns.Ns,
+		}
+	}
+	return nss, nil
+}
+
+func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error) {
+	if !isDomainName(name) {
+		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
+	}
+	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeTXT), 0)
+	if err != nil {
+		return nil, err
+	}
+	txts := make([]string, 0, len(records))
+	for _, record := range records {
+		txt, err := record.TXT()
+		if err != nil {
+			return nil, err
+		}
+		txts = append(txts, txt.Txt...)
+	}
+	return txts, nil
+}
+
 func fullyQualified(s string) string {
 	if !strings.HasSuffix(s, ".") {
 		s = s + "."
 	}
 	return s
+}
+
+func isDomainName(s string) bool {
+	l := len(s)
+	if l == 0 || l > 254 || l == 254 && s[l-1] != '.' {
+		return false
+	}
+	last := byte('.')
+	nonNumeric := false // true once we've seen a letter or hyphen
+	partlen := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		default:
+			return false
+		case 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_':
+			nonNumeric = true
+			partlen++
+		case '0' <= c && c <= '9':
+			// fine
+			partlen++
+		case c == '-':
+			// Byte before dash cannot be dot.
+			if last == '.' {
+				return false
+			}
+			partlen++
+			nonNumeric = true
+		case c == '.':
+			// Byte before dot cannot be dot, dash.
+			if last == '.' || last == '-' {
+				return false
+			}
+			if partlen > 63 || partlen == 0 {
+				return false
+			}
+			partlen = 0
+		}
+		last = c
+	}
+	if last == '-' || partlen > 63 {
+		return false
+	}
+	return nonNumeric
 }
