@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -72,6 +73,8 @@ func (r *Resolver) Close() error {
 	return r.conn.Close()
 }
 
+// DialContext resolves address using systemd-network and use internal dialer with the resolved ip address.
+// It is useful when it comes to integration with go standard library.
 func (r *Resolver) DialContext(ctx context.Context, network string, address string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
@@ -84,12 +87,12 @@ func (r *Resolver) DialContext(ctx context.Context, network string, address stri
 	for _, addr := range addrs {
 		if addr.Address.To4() == nil {
 			// prefer ipv6
-			address = "[" + addr.Address.String() + "]"
+			address = addr.Address.String()
 			break
 		}
 		address = addr.Address.String()
 	}
-	return r.dialer.DialContext(ctx, network, address+":"+port)
+	return r.dialer.DialContext(ctx, network, net.JoinHostPort(address, port))
 }
 
 // HTTPClient returns a new http.Client with systemd-resolved as resolver
@@ -171,6 +174,55 @@ func (r *Resolver) LookupAddr(ctx context.Context, addr string) (names []string,
 	return
 }
 
+// LookupIP looks up host for the given network using the systemd-resolved resolver.
+// It returns a slice of that host's IP addresses of the type specified by network.
+// network must be one of "ip", "ip4" or "ip6".
+func (r *Resolver) LookupIP(ctx context.Context, network, host string) ([]net.IP, error) {
+	if host == "" {
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+	var family int
+	switch network {
+	case "ip":
+		family = syscall.AF_UNSPEC
+	case "ip4":
+		family = syscall.AF_INET
+	case "ip6":
+		family = syscall.AF_INET6
+	default:
+		return nil, errors.New("bad network")
+	}
+	addresses, _, _, err := r.conn.ResolveHostname(ctx, 0, host, family, 0)
+	if err != nil {
+		return nil, err
+	}
+	addrs := make([]net.IP, len(addresses))
+	for i, addr := range addresses {
+		addrs[i] = addr.Address
+	}
+	return addrs, nil
+}
+
+// LookupIPAddr looks up host using the systemd-resolved resolver.
+// It returns a slice of that host's IPv4 and IPv6 addresses.
+func (r *Resolver) LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error) {
+	if host == "" {
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+	addresses, _, _, err := r.conn.ResolveHostname(ctx, 0, host, syscall.AF_UNSPEC, 0)
+	if err != nil {
+		return nil, err
+	}
+	addrs := make([]net.IPAddr, len(addresses))
+	for i, addr := range addresses {
+		addrs[i] = net.IPAddr{
+			IP: addr.Address,
+		}
+	}
+	return addrs, nil
+}
+
+// LookupCNAME returns the canonical name for the given host.
 func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error) {
 	if host == "" {
 		return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
@@ -189,6 +241,7 @@ func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error)
 	return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 }
 
+// LookupMX returns the DNS MX records for the given domain name sorted by preference.
 func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error) {
 	if !isDomainName(name) {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
@@ -208,9 +261,13 @@ func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error)
 			Pref: mx.Preference,
 		}
 	}
+	sort.Slice(mxs, func(i, j int) bool {
+		return mxs[i].Pref < mxs[j].Pref
+	})
 	return mxs, nil
 }
 
+// LookupNS returns the DNS NS records for the given domain name.
 func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error) {
 	if !isDomainName(name) {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
@@ -232,6 +289,7 @@ func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error)
 	return nss, nil
 }
 
+// LookupTXT returns the DNS TXT records for the given domain name.
 func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error) {
 	if !isDomainName(name) {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}

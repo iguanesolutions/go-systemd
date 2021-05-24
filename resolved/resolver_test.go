@@ -11,9 +11,11 @@ import (
 // In order to run the test make sure that systemd-resolved resolver query the same dns server as the go one.
 
 const (
-	lookupHost = "google.fr"
-	lookupAddr = "142.250.75.227"
-	getUrl     = "https://google.fr"
+	lookupHost      = "google.com"
+	lookupAddr4     = "142.250.178.142"
+	lookupAddr6     = "2a00:1450:4007:81a::200e"
+	lookupCNAMEHost = "en.wikipedia.org"
+	getUrl          = "https://google.com"
 )
 
 func TestLookupHost(t *testing.T) {
@@ -45,31 +47,195 @@ func TestLookupHost(t *testing.T) {
 	}
 }
 
-func TestLookupAddr(t *testing.T) {
+func TestLookupAddr4(t *testing.T) {
 	sysdResolver, err := NewResolver()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer sysdResolver.Close()
 	ctx := context.Background()
-	sysdNames, err := sysdResolver.LookupAddr(ctx, lookupAddr)
+	sysdNames, err := sysdResolver.LookupAddr(ctx, lookupAddr4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	goResolver := &net.Resolver{}
-	goNames, err := goResolver.LookupAddr(ctx, lookupAddr)
+	goNames, err := goResolver.LookupAddr(ctx, lookupAddr4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(goNames) != len(sysdNames) {
 		t.Fatal("len(goNames) != len(sysdNames)", len(goNames), len(sysdNames))
 	}
-	sort.Strings(sysdNames)
 	sort.Strings(goNames)
+	sort.Strings(sysdNames)
 	for i, sName := range sysdNames {
 		goName := goNames[i]
 		if goName != sName {
 			t.Error("goName != sName", goName, sName)
+		}
+	}
+}
+
+func TestLookupAddr6(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdNames, err := sysdResolver.LookupAddr(ctx, lookupAddr6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goNames, err := goResolver.LookupAddr(ctx, lookupAddr6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goNames) != len(sysdNames) {
+		t.Fatal("len(goNames) != len(sysdNames)", len(goNames), len(sysdNames))
+	}
+	sort.Strings(goNames)
+	sort.Strings(sysdNames)
+	for i, sName := range sysdNames {
+		goName := goNames[i]
+		if goName != sName {
+			t.Error("goName != sName", goName, sName)
+		}
+	}
+}
+
+func TestLookupIP(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdAddrs, err := sysdResolver.LookupIP(ctx, "ip", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goAddrs, err := goResolver.LookupIP(ctx, "ip", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goAddrs) != len(sysdAddrs) {
+		t.Fatal("len(goAddrs) != len(sysdAddrs)", len(goAddrs), len(sysdAddrs))
+	}
+	sort.Slice(sysdAddrs, func(i, j int) bool {
+		return sysdAddrs[i].String() < sysdAddrs[j].String()
+	})
+	sort.Slice(goAddrs, func(i, j int) bool {
+		return goAddrs[i].String() < goAddrs[j].String()
+	})
+	for i, sAddr := range sysdAddrs {
+		goAddr := goAddrs[i]
+		if goAddr.String() != sAddr.String() {
+			t.Error("goAddr != sAddr", goAddr, sAddr)
+		}
+	}
+}
+
+func TestLookupIP4(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdAddrs, err := sysdResolver.LookupIP(ctx, "ip4", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goAddrs, err := goResolver.LookupIP(ctx, "ip4", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goAddrs) != len(sysdAddrs) {
+		t.Fatal("len(goAddrs) != len(sysdAddrs)", len(goAddrs), len(sysdAddrs))
+	}
+	sort.Slice(sysdAddrs, func(i, j int) bool {
+		return sysdAddrs[i].String() < sysdAddrs[j].String()
+	})
+	sort.Slice(goAddrs, func(i, j int) bool {
+		return goAddrs[i].String() < goAddrs[j].String()
+	})
+	for i, sAddr := range sysdAddrs {
+		goAddr := goAddrs[i]
+		if goAddr.String() != sAddr.String() {
+			t.Error("goAddr != sAddr", goAddr, sAddr)
+		}
+	}
+}
+
+func TestLookupIP6(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdAddrs, err := sysdResolver.LookupIP(ctx, "ip6", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goAddrs, err := goResolver.LookupIP(ctx, "ip6", lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goAddrs) != len(sysdAddrs) {
+		t.Fatal("len(goAddrs) != len(sysdAddrs)", len(goAddrs), len(sysdAddrs))
+	}
+	sort.Slice(sysdAddrs, func(i, j int) bool {
+		return sysdAddrs[i].String() < sysdAddrs[j].String()
+	})
+	sort.Slice(goAddrs, func(i, j int) bool {
+		return goAddrs[i].String() < goAddrs[j].String()
+	})
+	for i, sAddr := range sysdAddrs {
+		goAddr := goAddrs[i]
+		if goAddr.String() != sAddr.String() {
+			t.Error("goAddr != sAddr", goAddr, sAddr)
+		}
+	}
+}
+
+func TestLookupIPAddr(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdAddrs, err := sysdResolver.LookupIPAddr(ctx, lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goAddrs, err := goResolver.LookupIPAddr(ctx, lookupHost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(goAddrs) != len(sysdAddrs) {
+		t.Fatal("len(goAddrs) != len(sysdAddrs)", len(goAddrs), len(sysdAddrs))
+	}
+	sort.Slice(sysdAddrs, func(i, j int) bool {
+		return sysdAddrs[i].String() < sysdAddrs[j].String()
+	})
+	sort.Slice(goAddrs, func(i, j int) bool {
+		return goAddrs[i].String() < goAddrs[j].String()
+	})
+	for i, sAddr := range sysdAddrs {
+		goAddr := goAddrs[i]
+		if goAddr.String() != sAddr.String() {
+			t.Error("goAddr != sAddr", goAddr, sAddr)
+		}
+		if goAddr.Zone != sAddr.Zone {
+			t.Error("goAddr .Zone!= sAddr.Zone", goAddr.Zone, sAddr.Zone)
 		}
 	}
 }
@@ -81,12 +247,12 @@ func TestLookupCNAME(t *testing.T) {
 	}
 	defer sysdResolver.Close()
 	ctx := context.Background()
-	sysdCNAME, err := sysdResolver.LookupCNAME(ctx, "ig1-sismobox-01.sadm.ig-1.net")
+	sysdCNAME, err := sysdResolver.LookupCNAME(ctx, lookupCNAMEHost)
 	if err != nil {
 		t.Fatal(err)
 	}
 	goResolver := &net.Resolver{}
-	goCNAME, err := goResolver.LookupCNAME(ctx, "ig1-sismobox-01.sadm.ig-1.net")
+	goCNAME, err := goResolver.LookupCNAME(ctx, lookupCNAMEHost)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,12 +280,6 @@ func TestLookupMX(t *testing.T) {
 	if len(goMxs) != len(sysdMxs) {
 		t.Fatal("len(goMxs) != len(sysdMxs)", len(goMxs), len(sysdMxs))
 	}
-	sort.Slice(goMxs, func(i, j int) bool {
-		return goMxs[i].Host > goMxs[j].Host
-	})
-	sort.Slice(sysdMxs, func(i, j int) bool {
-		return sysdMxs[i].Host > sysdMxs[j].Host
-	})
 	for i, sMx := range sysdMxs {
 		goMx := goMxs[i]
 		if goMx.Host != sMx.Host {
@@ -150,11 +310,11 @@ func TestLookupNS(t *testing.T) {
 	if len(goNss) != len(sysdNss) {
 		t.Fatal("len(goNss) != len(sysdNss)", len(goNss), len(sysdNss))
 	}
-	sort.Slice(goNss, func(i, j int) bool {
-		return goNss[i].Host > goNss[j].Host
-	})
 	sort.Slice(sysdNss, func(i, j int) bool {
-		return sysdNss[i].Host > sysdNss[j].Host
+		return sysdNss[i].Host < sysdNss[j].Host
+	})
+	sort.Slice(goNss, func(i, j int) bool {
+		return goNss[i].Host < goNss[j].Host
 	})
 	for i, sNs := range sysdNss {
 		goNs := goNss[i]
@@ -225,7 +385,7 @@ func BenchmarkLookupAddrGoResolver(b *testing.B) {
 	r := &net.Resolver{}
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		_, err := r.LookupAddr(ctx, lookupAddr)
+		_, err := r.LookupAddr(ctx, lookupAddr4)
 		if err != nil {
 			b.Error(err)
 			continue
@@ -241,7 +401,7 @@ func BenchmarkLookupAddrSystemdResolver(b *testing.B) {
 	defer r.Close()
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		_, err := r.LookupAddr(ctx, lookupAddr)
+		_, err := r.LookupAddr(ctx, lookupAddr4)
 		if err != nil {
 			b.Error(err)
 			continue
