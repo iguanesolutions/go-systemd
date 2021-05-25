@@ -262,7 +262,8 @@ func (r *Resolver) LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr,
 
 // LookupCNAME returns the canonical name for the given host.
 func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error) {
-	if host == "" {
+	var ok bool
+	if host, ok = r.IsDomainName(host); !ok {
 		return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
 	records, _, err := r.conn.ResolveRecord(ctx, 0, host, dns.ClassINET, dns.Type(dns.TypeCNAME), 0)
@@ -391,7 +392,7 @@ func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error)
 	return txts, nil
 }
 
-// IsDomainName tries to convert name to ASCII if name is not a strict domain name (see RFC 1035)
+// IsDomainName tries to convert name to ASCII (IANA conversion) if name is not a strict domain name (see RFC 1035)
 // It returns false if name is not a domain before and after ASCII conversion.
 // It uses isDomainName from go standard library.
 func (r *Resolver) IsDomainName(name string) (string, bool) {
