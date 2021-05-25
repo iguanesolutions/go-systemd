@@ -350,6 +350,12 @@ func TestLookupSRV(t *testing.T) {
 	if len(goSrvs) != len(sysdSrvs) {
 		t.Fatal("len(goSrvs) != len(sysdSrvs)", len(goSrvs), len(sysdSrvs))
 	}
+	sort.Slice(sysdSrvs, func(i, j int) bool {
+		return sysdSrvs[i].Target < sysdSrvs[j].Target
+	})
+	sort.Slice(goSrvs, func(i, j int) bool {
+		return goSrvs[i].Target < goSrvs[j].Target
+	})
 	for i, sSrv := range sysdSrvs {
 		goSrv := goSrvs[i]
 		if goSrv.Target != sSrv.Target {
