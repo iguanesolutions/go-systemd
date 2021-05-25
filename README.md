@@ -149,8 +149,8 @@ I started this package in order to go deep into the DNS world. So I'm opened to 
 DNS is not trivial at all so there can be some stuff that are not rfc compliant.
 
 The resolved package features:
- * Pure go implementation of org.freedesktop.resolve1 dbus interface
- * Resolver type that tries to implement the same methods as net.Resolver from go standard library
+ * Pure go implementation of `org.freedesktop.resolve1` dbus interface
+ * Resolver type that tries to implement the same methods as net.Resolver from Go standard library
  * Unit tests (make sure Go resolver and systemd-resolved query the same dns server)
 
 ### Dbus
