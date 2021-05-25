@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"runtime"
 	"sort"
-	"strings"
 	"syscall"
 	"time"
 
@@ -321,7 +320,7 @@ func (r *Resolver) LookupPort(ctx context.Context, network, service string) (por
 }
 
 // LookupSRV tries to resolve an SRV query of the given service, protocol, and domain name.
-// The proto is "tcp" or "udp". The returned records are sorted by priority and randomized by weight within a priority.
+// The proto is "tcp" or "udp". The returned records are sorted by priority.
 func (r *Resolver) LookupSRV(ctx context.Context, service, proto, name string) (cname string, addrs []*net.SRV, err error) {
 	var target string
 	if service == "" && proto == "" {
@@ -374,12 +373,23 @@ func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error)
 }
 
 func fullyQualified(s string) string {
-	if !strings.HasSuffix(s, ".") {
-		s = s + "."
+	b := []byte(s)
+	hasDots := false
+	for _, x := range b {
+		if x == '.' {
+			hasDots = true
+			break
+		}
 	}
-	return s
+	if hasDots && b[len(b)-1] != '.' {
+		b = append(b, '.')
+	}
+	return string(b)
 }
 
+// this function comes from go standard library
+// there is issues about it since it denied some valid domains.
+// see: https://github.com/golang/go/issues/17659
 func isDomainName(s string) bool {
 	l := len(s)
 	if l == 0 || l > 254 || l == 254 && s[l-1] != '.' {
