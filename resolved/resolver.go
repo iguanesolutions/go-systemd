@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// Note: This is still under development and very expiremental, do not use it in production.
+// Note: This is still under development and very experimental, do not use it in production.
 
 // resolver is the interface to implements the same methods as the net.Resolver
 type resolver interface {
