@@ -145,12 +145,12 @@ if watchdog != nil {
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/resolved/resolved)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5/resolved)
 
 This package is still under development and very experimental, do not use it in production.
-I started this package in order to go deep into the DNS world. So I'm opened to any suggestions/contributions on this.
-DNS is not trivial at all so there can be some stuff that are not rfc compliant.
+We started this package in order to go deep into the DNS world. So we are opened to any suggestions/contributions on this.
+DNS is not trivial at all so there can be some stuff that are not rfc compliant (like sorting addresses etc...).
 
 The resolved package features:
- * Pure go implementation of `org.freedesktop.resolve1` dbus interface
- * Resolver type that tries to implement the same methods as net.Resolver from Go standard library
+ * Pure Go implementation of `org.freedesktop.resolve1` dbus interface
+ * Resolver type (which uses the underlying dbus interface) that tries to implement the same methods as `net.Resolver` from Go standard library
  * Unit tests (make sure Go resolver and systemd-resolved query the same dns server)
 
 ### Dbus
@@ -244,4 +244,56 @@ Output:
 
 ```output
 Addresses:  [2a00:1450:4007:80b::200e 142.250.74.238]
+```
+
+### HTTP Client
+
+The following example shows how to use the systemd-resolved Resolver with the Go http client from the standard library:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/iguanesolutions/go-systemd/v5/resolved"
+)
+
+func main() {
+	r, err := resolved.NewResolver()
+	if err != nil {
+		log.Fatal("ERROR: ", err)
+	}
+	// if you want to make a custom http client using systemd-resolved as resolver
+	httpCli := &http.Client{
+		Transport: &http.Transport{
+			DialContext: r.DialContext,
+		},
+	}
+	// or if you don't have an http client you can call HTTPClient method on resolver
+	// it comes with some nice default values.
+	httpCli = r.HTTPClient()
+	resp, err := httpCli.Get("https://google.com")
+	if err != nil {
+		log.Println("ERROR: ", err)
+	} else {
+		fmt.Println("Status: ", resp.Status)
+		err = resp.Body.Close()
+		if err != nil {
+			log.Println("ERROR: ", err)
+		}
+	}
+	err = r.Close()
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
+}
+```
+
+Output:
+
+```output
+Status:  200 OK
 ```
