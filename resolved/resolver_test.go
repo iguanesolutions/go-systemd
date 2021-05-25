@@ -11,11 +11,15 @@ import (
 // In order to run the test make sure that systemd-resolved resolver query the same dns server as the go one.
 
 const (
-	lookupHost      = "google.com"
-	lookupAddr4     = "142.250.178.142"
-	lookupAddr6     = "2a00:1450:4007:81a::200e"
-	lookupCNAMEHost = "en.wikipedia.org"
-	getUrl          = "https://google.com"
+	lookupHost             = "google.com"
+	lookupAddr4            = "142.250.178.142"
+	lookupAddr6            = "2a00:1450:4007:81a::200e"
+	lookupCNAMEHost        = "en.wikipedia.org"
+	lookupSRVDomain        = "google.com"
+	lookupSRVService       = "xmpp-server"
+	lookupSRVProto         = "tcp"
+	lookupSRVServiceDomain = "_xmpp-server._tcp.google.com"
+	getUrl                 = "https://google.com"
 )
 
 func TestLookupHost(t *testing.T) {
@@ -320,6 +324,45 @@ func TestLookupNS(t *testing.T) {
 		goNs := goNss[i]
 		if goNs.Host != sNs.Host {
 			t.Error("goNs.Host != sNs.Host", goNs.Host, sNs.Host)
+		}
+	}
+}
+
+func TestLookupSRV(t *testing.T) {
+	sysdResolver, err := NewResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sysdResolver.Close()
+	ctx := context.Background()
+	sysdCNAME, sysdSrvs, err := sysdResolver.LookupSRV(ctx, lookupSRVService, lookupSRVProto, lookupSRVDomain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goResolver := &net.Resolver{}
+	goCNAME, goSrvs, err := goResolver.LookupSRV(ctx, lookupSRVService, lookupSRVProto, lookupSRVDomain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sysdCNAME != goCNAME {
+		t.Fatal("sysdCNAME != goCNAME", sysdCNAME, goCNAME)
+	}
+	if len(goSrvs) != len(sysdSrvs) {
+		t.Fatal("len(goSrvs) != len(sysdSrvs)", len(goSrvs), len(sysdSrvs))
+	}
+	for i, sSrv := range sysdSrvs {
+		goSrv := goSrvs[i]
+		if goSrv.Target != sSrv.Target {
+			t.Error("goSrv.Target != sSrv.Target", goSrv.Target, sSrv.Target)
+		}
+		if goSrv.Port != sSrv.Port {
+			t.Error("goSrv.Port != sSrv.Port", goSrv.Port, sSrv.Port)
+		}
+		if goSrv.Priority != sSrv.Priority {
+			t.Error("goSrv.Priority != sSrv.Priority", goSrv.Priority, sSrv.Priority)
+		}
+		if goSrv.Weight != sSrv.Weight {
+			t.Error("goSrv.Weight != sSrv.Weight", goSrv.Weight, sSrv.Weight)
 		}
 	}
 }

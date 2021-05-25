@@ -14,6 +14,8 @@ import (
 	"github.com/miekg/dns"
 )
 
+// Note: This is still under development and very expiremental, do not use it in production.
+
 // resolver is the interface to implements the same methods as the net.Resolver
 type resolver interface {
 	LookupAddr(ctx context.Context, addr string) (names []string, err error)
@@ -312,14 +314,42 @@ func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error)
 
 // LookupPort looks up the port for the given network and service.
 func (r *Resolver) LookupPort(ctx context.Context, network, service string) (port int, err error) {
-	err = errNotSupported
+	// this is not supported because i don't want to implement again what's inside the go standard library
+	// like the port map filled with /etc/service etc...
+	err = errors.New("not supported yet")
 	return
 }
 
 // LookupSRV tries to resolve an SRV query of the given service, protocol, and domain name.
 // The proto is "tcp" or "udp". The returned records are sorted by priority and randomized by weight within a priority.
 func (r *Resolver) LookupSRV(ctx context.Context, service, proto, name string) (cname string, addrs []*net.SRV, err error) {
-	err = errNotSupported
+	var target string
+	if service == "" && proto == "" {
+		target = name
+	} else {
+		target = "_" + service + "._" + proto + "." + name
+	}
+	srvData, _, _, canonicalType, canonicalDomain, _, err := r.conn.ResolveService(ctx, 0, "", "", target, syscall.AF_UNSPEC, 0)
+	if err != nil {
+		return
+	}
+	addrs = make([]*net.SRV, len(srvData))
+	for i, srv := range srvData {
+		addrs[i] = &net.SRV{
+			Target:   fullyQualified(srv.Hostname),
+			Port:     srv.Port,
+			Priority: srv.Priority,
+			Weight:   srv.Weight,
+		}
+	}
+	sort.Slice(addrs, func(i, j int) bool {
+		return addrs[i].Priority < addrs[j].Priority
+	})
+	if canonicalType != "" {
+		cname = fullyQualified(canonicalType + "." + canonicalDomain)
+	} else {
+		cname = fullyQualified(canonicalDomain)
+	}
 	return
 }
 

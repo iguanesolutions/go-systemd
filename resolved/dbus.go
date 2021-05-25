@@ -58,11 +58,6 @@ func (c *Conn) Close() error {
 	return c.conn.Close()
 }
 
-var (
-	// errNotSupported is returned when a method is not implemeted.
-	errNotSupported = errors.New("method not supported yet")
-)
-
 // ResolveHostname, ResolveAddress, ResolveRecord, ResolveService
 // The four methods above accept and return a 64-bit flags value.
 // In most cases passing 0 is sufficient and recommended.
@@ -131,6 +126,8 @@ func (c *Conn) ResolveAddress(ctx context.Context, ifindex int, family int, addr
 	return
 }
 
+// ResourceRecord represents a DNS RR as it returned by
+// by ResolveRecord.
 type ResourceRecord struct {
 	IfIndex int       // network interface index
 	Type    dns.Type  // dns type
@@ -150,6 +147,7 @@ func (r ResourceRecord) String() string {
 }`, r.IfIndex, r.Type.String(), r.Class.String(), r.Data)
 }
 
+// Unpack unpacks a ResourceRecord to dns.RR interface.
 func (r ResourceRecord) Unpack() (dns.RR, error) {
 	rr, _, err := dns.UnpackRR(r.Data, 0)
 	if err != nil {
@@ -158,6 +156,7 @@ func (r ResourceRecord) Unpack() (dns.RR, error) {
 	return rr, nil
 }
 
+// CNAME unpacks a ResourceRecord to *dns.CNAME.
 func (r ResourceRecord) CNAME() (*dns.CNAME, error) {
 	rr, err := r.Unpack()
 	if err != nil {
@@ -173,6 +172,7 @@ func (r ResourceRecord) CNAME() (*dns.CNAME, error) {
 	return cname, nil
 }
 
+// MX unpacks a ResourceRecord to *dns.MX.
 func (r ResourceRecord) MX() (*dns.MX, error) {
 	rr, err := r.Unpack()
 	if err != nil {
@@ -188,6 +188,7 @@ func (r ResourceRecord) MX() (*dns.MX, error) {
 	return mx, nil
 }
 
+// NS unpacks a ResourceRecord to *dns.NS.
 func (r ResourceRecord) NS() (*dns.NS, error) {
 	rr, err := r.Unpack()
 	if err != nil {
@@ -203,6 +204,7 @@ func (r ResourceRecord) NS() (*dns.NS, error) {
 	return ns, nil
 }
 
+// SRV unpacks a ResourceRecord to *dns.SRV.
 func (r ResourceRecord) SRV() (*dns.SRV, error) {
 	rr, err := r.Unpack()
 	if err != nil {
@@ -218,6 +220,7 @@ func (r ResourceRecord) SRV() (*dns.SRV, error) {
 	return srv, nil
 }
 
+// TXT unpacks a ResourceRecord to *dns.TXT.
 func (r ResourceRecord) TXT() (*dns.TXT, error) {
 	rr, err := r.Unpack()
 	if err != nil {
@@ -245,12 +248,15 @@ func (c *Conn) ResolveRecord(ctx context.Context, ifindex int, name string, clas
 	return
 }
 
+// SRVRecord represents an service record as it returned
+// by ResolveService.
 type SRVRecord struct {
 	Priority  uint16
 	Weight    uint16
 	Port      uint16
 	Hostname  string
 	Addresses []Address
+	CNAME     string
 }
 
 func (r SRVRecord) String() string {
@@ -263,12 +269,25 @@ func (r SRVRecord) String() string {
 }`, r.Priority, r.Weight, r.Port, r.Hostname, r.Addresses)
 }
 
-// TODO
-// ResolveService
+// TXTRecord represents a raw TXT RR string
+type TXTRecord []byte
+
+func (r TXTRecord) String() string {
+	return string(r)
+}
+
+// ResolveService resolves a DNS SRV service record, as well as the hostnames referenced in it
+// and possibly an accompanying DNS-SD TXT record containing additional service metadata.
+// ctx: Context to use
+// ifindex: Network interface index where to look (0 means any)
+// name: the service name
+// stype: the service type (eg: _webdav._tcp)
+// domain: the service domain
+// family: Address family (syscall.AF_UNSPEC, syscall.AF_INET, syscall.AF_INET6)
+// flags: Input flags parameter
 func (c *Conn) ResolveService(ctx context.Context, ifindex int, name string, stype string, domain string, family int,
-	flags uint64) (srvData []SRVRecord, txtData []interface{}, canonicalName string, canonicalType string, canonicalDomain string, outflags uint64, err error) {
-	//err = c.Call(ctx, "ResolveService", ifindex, name, stype, domain, family, flags).Store(&srvData, &txtData, &canonicalName, &canonicalType, &canonicalDomain, &outflags)
-	err = errNotSupported
+	flags uint64) (srvData []SRVRecord, txtData []TXTRecord, canonicalName string, canonicalType string, canonicalDomain string, outflags uint64, err error) {
+	err = c.Call(ctx, "ResolveService", ifindex, name, stype, domain, family, flags).Store(&srvData, &txtData, &canonicalName, &canonicalType, &canonicalDomain, &outflags)
 	return
 }
 
@@ -381,20 +400,16 @@ func (c *Conn) RevertLink(ctx context.Context, ifindex int) error {
 	return c.Call(ctx, "RevertLink", ifindex).Store()
 }
 
-// TODO
 // RegisterService
 func (c *Conn) RegisterService(ctx context.Context, name string, nameTemplate string, stype string,
-	svcPort uint16, svcPriority uint16, svcWeight uint16, txtData []interface{}) (svcPath string, err error) {
-	//err = c.Call(ctx, "RegisterService", name, nameTemplate, stype, svcPort, svcPriority, svcWeight, txtData).Store(&svcPath)
-	err = errNotSupported
+	svcPort uint16, svcPriority uint16, svcWeight uint16, txtData []TXTRecord) (svcPath string, err error) {
+	err = c.Call(ctx, "RegisterService", name, nameTemplate, stype, svcPort, svcPriority, svcWeight, txtData).Store(&svcPath)
 	return
 }
 
-// TODO
 // UnregisterService
 func (c *Conn) UnregisterService(ctx context.Context, svcPath string) error {
-	//return c.Call(ctx, "UnregisterService", svcPath).Store()
-	return errNotSupported
+	return c.Call(ctx, "UnregisterService", svcPath).Store()
 }
 
 // ResetStatistics resets the various statistics counters that systemd-resolved maintains to zero.
