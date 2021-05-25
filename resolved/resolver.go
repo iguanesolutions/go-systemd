@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/net/idna"
 )
 
 // Note: This is still under development and very expiremental, do not use it in production.
@@ -38,8 +39,9 @@ var (
 // Resolver represents the systemd-resolved resolver
 // throught dbus connection.
 type Resolver struct {
-	conn   *Conn
-	dialer *net.Dialer
+	conn    *Conn
+	dialer  *net.Dialer
+	profile *idna.Profile
 }
 
 type resolverOption func(r *Resolver) error
@@ -66,6 +68,17 @@ func WithDialer(d *net.Dialer) resolverOption {
 	}
 }
 
+// WithProfile allow you to use custom idna.Profile.
+func WithProfile(p *idna.Profile) resolverOption {
+	return func(r *Resolver) error {
+		if p == nil {
+			return errors.New("profile is nil")
+		}
+		r.profile = p
+		return nil
+	}
+}
+
 // NewResolver returns a new systemd Resolver with an initialized dbus connection.
 // it's up to you to close that connection when you have been done with the Resolver.
 func NewResolver(opts ...resolverOption) (*Resolver, error) {
@@ -85,6 +98,9 @@ func NewResolver(opts ...resolverOption) (*Resolver, error) {
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}
+	}
+	if r.profile == nil {
+		r.profile = idna.New()
 	}
 	return r, nil
 }
@@ -265,7 +281,8 @@ func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error)
 
 // LookupMX returns the DNS MX records for the given domain name sorted by preference.
 func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error) {
-	if !isDomainName(name) {
+	var ok bool
+	if name, ok = r.IsDomainName(name); !ok {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
 	}
 	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeMX), 0)
@@ -291,7 +308,8 @@ func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*net.MX, error)
 
 // LookupNS returns the DNS NS records for the given domain name.
 func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*net.NS, error) {
-	if !isDomainName(name) {
+	var ok bool
+	if name, ok = r.IsDomainName(name); !ok {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
 	}
 	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeNS), 0)
@@ -354,7 +372,8 @@ func (r *Resolver) LookupSRV(ctx context.Context, service, proto, name string) (
 
 // LookupTXT returns the DNS TXT records for the given domain name.
 func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error) {
-	if !isDomainName(name) {
+	var ok bool
+	if name, ok = r.IsDomainName(name); !ok {
 		return nil, &net.DNSError{Err: "no such host", Name: name, IsNotFound: true}
 	}
 	records, _, err := r.conn.ResolveRecord(ctx, 0, name, dns.ClassINET, dns.Type(dns.TypeTXT), 0)
@@ -370,6 +389,23 @@ func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error)
 		txts = append(txts, txt.Txt...)
 	}
 	return txts, nil
+}
+
+// IsDomainName tries to convert name to ASCII if name is not a strict domain name (see RFC 1035)
+// It returns false if name is not a domain before and after ASCII conversion.
+// It uses isDomainName from go standard library.
+func (r *Resolver) IsDomainName(name string) (string, bool) {
+	if !isDomainName(name) {
+		var err error
+		name, err = r.profile.ToASCII(name)
+		if err != nil {
+			return name, false
+		}
+		if !isDomainName(name) {
+			return name, false
+		}
+	}
+	return name, true
 }
 
 func fullyQualified(s string) string {
