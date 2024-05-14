@@ -1,8 +1,82 @@
 # go-systemd
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd) [![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5)
+[![Go Report Card](https://goreportcard.com/badge/github.com/iguanesolutions/go-systemd/v5)](https://goreportcard.com/report/github.com/iguanesolutions/go-systemd/v5) [![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5)
 
 Easily communicate with systemd when run as daemon within a service unit.
+
+## journald
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5/journald)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5/journald)
+
+### slog handler
+
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/iguanesolutions/go-systemd/v5/journald/slog)](https://pkg.go.dev/github.com/iguanesolutions/go-systemd/v5/journald/slog)
+
+This package provides a systemd journald compatible [log/slog handler](https://pkg.go.dev/log/slog#Handler).
+
+In a nutshell it:
+* removes slog timestamp as journald will have its own
+* provides journald additionnal log levels
+* indicate the log level to journald in order for it to colorize the log message when showing it with `journalctl`
+
+#### Installation
+
+```bash
+go get -v "github.com/iguanesolutions/go-systemd/v5/journald/slog"
+```
+
+#### Example
+
+```go
+package main
+
+import (
+	"log/slog"
+	"os"
+	"strings"
+
+	sysd "github.com/iguanesolutions/go-systemd/v5"
+	sysdjournaldslog "github.com/iguanesolutions/go-systemd/v5/journald/slog"
+)
+
+const ENVVAR_LOGLEVEL = "LOG_LEVEL"
+
+func main() {
+	logger := slog.New(GetAppropriateSlogHandler())
+	logger.Debug("shhhh...")
+	logger.Info("Noice")
+	logger.Warn("Try me with and without systemd!")
+	logger.Error("Ouch")
+}
+
+func GetAppropriateSlogHandler() (loggerHandler slog.Handler) {
+	// Get raw log level
+	levelStr := os.Getenv(ENVVAR_LOGLEVEL)
+	// Check if we need to return a systemd handler
+	_, sysdStarted := sysd.GetInvocationID()
+	if sysdStarted {
+		return sysdjournaldslog.NewHandler(sysdjournaldslog.GetLogLevel(levelStr))
+	}
+	// Return regular text handler if not started by systemd
+	var level slog.Level
+	switch strings.ToUpper(levelStr) {
+	case sysdjournaldslog.LevelDebugStr:
+		level = slog.LevelDebug
+	case sysdjournaldslog.LevelInfoStr:
+		level = slog.LevelInfo
+	case sysdjournaldslog.LevelWarningStr:
+		level = slog.LevelWarn
+	case sysdjournaldslog.LevelErrorStr:
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	return slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	})
+}
+```
+
 
 ## Notifier
 
