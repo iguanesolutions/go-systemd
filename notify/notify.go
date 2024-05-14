@@ -3,9 +3,19 @@ package sysdnotify
 import (
 	"fmt"
 	"net"
+	"os"
 )
 
 var socket *net.UnixAddr
+
+func init() {
+	if notifySocketName := os.Getenv("NOTIFY_SOCKET"); notifySocketName != "" {
+		socket = &net.UnixAddr{
+			Name: notifySocketName,
+			Net:  "unixgram",
+		}
+	}
+}
 
 // IsEnabled tells if systemd notify socket has been detected or not.
 func IsEnabled() bool {
