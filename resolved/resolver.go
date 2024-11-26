@@ -83,8 +83,12 @@ func WithProfile(p *idna.Profile) resolverOption {
 // it's up to you to close that connection when you have been done with the Resolver.
 func NewResolver(opts ...resolverOption) (*Resolver, error) {
 	r := &Resolver{}
+	var err error
 	for _, opt := range opts {
-		opt(r)
+		err = opt(r)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if r.conn == nil {
 		var err error
