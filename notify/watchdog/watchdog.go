@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	sysdnotify "github.com/iguanesolutions/go-systemd/v5/notify"
+	sysdnotify "github.com/iguanesolutions/go-systemd/v6/notify"
 )
 
 // WatchDog is an interface to the systemd watchdog mechanism

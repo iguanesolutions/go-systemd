@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	sysdjournald "github.com/iguanesolutions/go-systemd/v5/journald"
+	sysdjournald "github.com/iguanesolutions/go-systemd/v6/journald"
 )
 
 const (
