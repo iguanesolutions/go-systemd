@@ -83,8 +83,12 @@ func WithProfile(p *idna.Profile) resolverOption {
 // it's up to you to close that connection when you have been done with the Resolver.
 func NewResolver(opts ...resolverOption) (*Resolver, error) {
 	r := &Resolver{}
+	var err error
 	for _, opt := range opts {
-		opt(r)
+		err = opt(r)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if r.conn == nil {
 		var err error
@@ -270,14 +274,14 @@ func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error)
 	if err != nil {
 		return "", err
 	}
-	for _, record := range records {
-		recordCNAME, err := record.CNAME()
-		if err != nil {
-			return "", err
-		}
-		return recordCNAME.Target, nil
+	if len(records) == 0 {
+		return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
-	return "", &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	cname, err := records[0].CNAME()
+	if err != nil {
+		return "", err
+	}
+	return cname.Target, nil
 }
 
 // LookupMX returns the DNS MX records for the given domain name sorted by preference.
