@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 
 	sysdjournald "github.com/iguanesolutions/go-systemd/v5/journald"
@@ -85,8 +84,6 @@ type Options struct {
 	// AddSource causes the handler to compute the source code position
 	// of the log statement and add a SourceKey attribute to the output.
 	AddSource bool
-	// SourceFormat specifies a function that formats the source information.
-	SourceFormat func(*slog.Source) string
 	// ReplaceAttr is called to rewrite each non-group attribute before it is logged.
 	// The attribute's value has been resolved (see [Value.Resolve]).
 	// If ReplaceAttr returns a zero Attr, the attribute is discarded.
@@ -112,9 +109,8 @@ type Options struct {
 	// attributes, convert types (for example, to replace a `time.Time` with the
 	// integer seconds since the Unix epoch), sanitize personal information, or
 	// remove attributes from the output.
-	// Also ReplaceAttr can not be used to replace the built-in time, level and source attrs.
+	// Also ReplaceAttr can not be used to replace the built-in time and level attrs
 	// since time is removed and level is modified to add the sd prefix.
-	// You can replace source field by using the SourceFormat funcion.
 	ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
 	// Level reports the minimum record level that will be logged.
 	// The handler discards records with lower levels.
@@ -125,13 +121,7 @@ type Options struct {
 }
 
 // NewHandler returns a new slog handler that writes logs in a journald compatible/enhanced format.
-func NewHandler(opts Options) slog.Handler {
-	if opts.SourceFormat == nil {
-		opts.SourceFormat = func(src *slog.Source) string {
-			dir, file := filepath.Split(src.File)
-			return fmt.Sprintf("%s:%d", filepath.Join(filepath.Base(dir), file), src.Line)
-		}
-	}
+func NewHandler(opts slog.HandlerOptions) slog.Handler {
 	return slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level:     opts.Level,
 		AddSource: opts.AddSource,
@@ -171,8 +161,6 @@ func NewHandler(opts Options) slog.Handler {
 					a.Key = prefixEmergencyStr
 					a.Value = slog.StringValue(str(LevelEmergencyStr, level-LevelEmergency))
 				}
-			case slog.SourceKey:
-				a.Value = slog.StringValue(opts.SourceFormat(a.Value.Any().(*slog.Source)))
 			default:
 				if opts.ReplaceAttr != nil {
 					a = opts.ReplaceAttr(groups, a)
